@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>센서와 인식</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Pretendard", "Malgun Gothic", sans-serif; background: #eef3fb; color: #1f2a44; }
+  header { position: sticky; top: 0; z-index: 10; background: #ffffffee; backdrop-filter: blur(6px);
+           display: flex; align-items: center; justify-content: space-between; gap: 12px;
+           padding: 12px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  h1 { margin: 0; font-size: 1.25rem; }
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .actions a, .actions button { border: 0; border-radius: 8px; padding: 8px 14px; font-size: .9rem; cursor: pointer;
+           background: #4a6fd8; color: #fff; text-decoration: none; }
+  .actions button.secondary { background: #dfe7f8; color: #1f2a44; }
+  #status { font-size: .9rem; color: #555; }
+  main { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 20px; }
+  .page { width: 100%; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+  .page canvas { display: block; width: 100%; height: auto; }
+  .num { text-align: center; font-size: .8rem; color: #888; margin-top: -12px; }
+  footer { text-align: center; padding: 24px; font-size: .8rem; color: #888; }
+</style>
+</head>
+<body>
+<header>
+  <h1>센서와 인식</h1>
+  <div class="actions">
+    <span id="status">불러오는 중...</span>
+    <button class="secondary" onclick="openFull()">전체 화면</button>
+    <a href="sensor.pdf" download="센서와 인식.pdf">PDF 다운로드</a>
+  </div>
+</header>
+<main id="viewer"></main>
+<footer>지능 에이전트 · 센서 · 인공지능 시스템</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const viewer = document.getElementById("viewer");
+  const status = document.getElementById("status");
+  function openFull() { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+  pdfjsLib.getDocument("sensor.pdf").promise.then(async (pdf) => {
+    const scale = Math.min(2.5, Math.max(1.5, window.devicePixelRatio * 1.25));
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pg = await pdf.getPage(i);
+      const vp = pg.getViewport({ scale });
+      const wrap = document.createElement("div");
+      wrap.className = "page";
+      const canvas = document.createElement("canvas");
+      canvas.width = vp.width; canvas.height = vp.height;
+      wrap.appendChild(canvas);
+      viewer.appendChild(wrap);
+      const n = document.createElement("div");
+      n.className = "num"; n.textContent = i + " / " + pdf.numPages;
+      viewer.appendChild(n);
+      await pg.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+      status.textContent = i + " / " + pdf.numPages + " 페이지";
+    }
+    status.textContent = "총 " + pdf.numPages + " 페이지";
+  }).catch(err => {
+    status.textContent = "PDF를 불러오지 못했습니다";
+    viewer.innerHTML = '<p>PDF를 표시할 수 없습니다. <a href="sensor.pdf">여기</a>를 눌러 직접 열어 주세요.</p>';
+    console.error(err);
+  });
+</script>
+</body>
+</html>
